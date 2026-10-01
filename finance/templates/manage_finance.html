@@ -1,0 +1,133 @@
+{% extends 'layout.html' %}
+
+{% block title %}Manage Ledger | Budget Buddy{% endblock %}
+
+{% block body %}
+    <div class="container my-5" style="max-width: 800px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 fw-bold text-dark mb-1">Ledger Settings</h1>
+                <p class="text-muted small mb-0">Modify active metrics, envelopes, and records</p>
+            </div>
+            <a href="/" class="btn btn-sm btn-outline-secondary fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success border-0 shadow-sm small py-2 mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>{{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="{% url 'update_finance_data' %}">
+            {% csrf_token %}
+
+            <!-- SECTION 1: MASTER POOL -->
+            {% if pool %}
+                <div class="card border-0 shadow-sm p-4 mb-4 bg-white">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-wallet2 text-secondary me-2"></i>Master Pool</h5>
+                    <input type="hidden" name="pool_id" value="{{ pool.id }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-secondary">Cash Pool (KES)</label>
+                            <input type="number" name="pool_amount" class="form-control form-control-sm fw-bold" value="{{ pool.total_amount }}" step="0.01" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-secondary">Pool Source</label>
+                            <input type="text" name="pool_source" class="form-control form-control-sm" value="{{ pool.source }}" required>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- SECTION 2: ENVELOPE ALLOCATIONS -->
+            <div class="card border-0 shadow-sm p-4 mb-4 bg-white">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart text-secondary me-2"></i>Envelope Allocations</h5>
+                {% if allocations %}
+                    <div class="vstack gap-3">
+                        {% for alloc in allocations %}
+                            <div class="d-flex align-items-center justify-content-between gap-3 border-bottom pb-2">
+                                <span class="fw-semibold text-dark small w-40">{{ alloc.description }} <small class="text-muted">({{ alloc.category }})</small></span>
+                                
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="input-group input-group-sm" style="max-width: 160px;">
+                                        <span class="input-group-text bg-light text-secondary small fw-bold">KES</span>
+                                        <input type="number" name="alloc_amount_{{ alloc.id }}" class="form-control text-end fw-bold" value="{{ alloc.amount }}" step="0.01" min="1" required>
+                                    </div>
+                                    
+                                    <!-- Mini-form for deleting this specific envelope -->
+                                    <form method="POST" action="{% url 'update_finance_data' %}" onsubmit="return confirm('Are you sure you want to delete the &quot;{{ alloc.description }}&quot; envelope? This will clear its budget allocation slice.');" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="delete_allocation_id" value="{{ alloc.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger border-0 px-2">
+                                            <i class="bi bi-trash-fill"></i>Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted small my-2">No active envelopes configured to modify.</p>
+                {% endif %}
+            </div>
+
+
+            <!-- SECTION 3: TRANSACTIONAL HISTORY RECORDS -->
+            <div class="card border-0 shadow-sm p-4 mb-4 bg-white">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-list-columns-reverse text-secondary me-2"></i>Logged Transactions</h5>
+                {% if transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 small text-nowrap">
+                            <thead class="table-light text-secondary">
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Time Logged</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tx in transactions %}
+                                    <tr>
+                                        <td class="fw-semibold text-dark">{{ tx.description }}</td>
+                                        <td>
+                                            <span class="badge {% if tx.category == 'EXPENSE' %}bg-danger{% elif tx.category == 'WANT' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                                {{ tx.category }}
+                                            </span>
+                                        </td>
+                                        <td class="fw-bold text-dark">KES {{ tx.amount }}</td>
+                                        <td class="text-muted small">{{ tx.local_time_display }}</td>
+                                        <td class="text-end">
+                                            <!-- mini-form for each delete button -->
+                                            <form method="POST" action="{% url 'update_finance_data' %}" onsubmit="return confirm('Are you sure you want to delete this transaction record? This will restore the money to its envelope.');" style="display:inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="delete_transaction_id" value="{{ tx.id }}">
+                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0 border-0 fw-bold">
+                                                    <i class="bi bi-trash-fill me-1"></i>Delete
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted small my-2">No historical spending records found this period.</p>
+                {% endif %}
+            </div>
+
+            <!-- FOOTER ACTIONS BAR -->
+            <div class="d-flex justify-content-end gap-2 bg-light p-3 rounded shadow-sm border">
+                <a href="/" class="btn btn-sm btn-secondary fw-semibold px-4">Cancel</a>
+                <button type="submit" class="btn btn-sm btn-success fw-bold px-4">Save Changes</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+

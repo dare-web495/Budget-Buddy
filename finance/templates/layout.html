@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en-KE">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Budget Buddy{% endblock %}</title>
+        <!-- added bootstrap -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        <link href="{% static 'static.css' %}" rel="stylesheet">
+    </head>
+
+    <body class="bg-light text-dark d-flex flex-column min-vh-100">
+
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-3">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="{% url 'index' %}">
+                    <i class="bi bi-shield-check text-success me-2"></i>Budget Buddy
+                </a>
+                
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="mainNavbar">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        {% if user.is_authenticated %}
+                            <li class="nav-item">
+                                <a class="nav-link text-white small" href="{% url 'index' %}">
+                                    <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        {% if user.is_authenticated %}
+                            <span class="text-light small bg-secondary bg-opacity-25 px-3 py-2 rounded-pill border border-secondary border-opacity-50">
+                                <i class="bi bi-person-fill text-success me-1"></i>{{ user.username }}
+                            </span>
+                            <form action="{% url 'logout' %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-light px-3">
+                                    Logout
+                                </button>
+                            </form>
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn btn-sm btn-outline-light px-3">Login</a>
+                            <a href="{% url 'register' %}" class="btn btn-sm btn-success px-3 fw-bold">Register</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Notification Center -->
+        <div class="container my-3" style="max-width: 600px;">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm border-0" role="alert">
+                        <i class="bi {% if message.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-check-circle-fill{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Primary Body Blocks -->
+        <main class="flex-grow-1">
+            {% block body %}{% endblock %}
+        </main>
+
+        <!-- Footer Layout -->
+        <footer class="bg-white border-top py-4 mt-auto shadow-sm">
+            <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                <span class="text-muted small">© 2026 Budget Buddy. Secure Personal Ledger.</span>
+                <span class="text-muted small">Locally Formatted for <strong class="text-dark">KES (Shillings)</strong></span>
+            </div>
+        </footer>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+        <script src="{% static 'script.js' %}" defer></script>
+        
+        <!-- Block for specific js components -->
+        {% block scripts %}{% endblock %}
+    </body>
+</html>
